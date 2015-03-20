@@ -1,0 +1,50 @@
+---
+title: "HAR Analysis"
+output: html_document
+---
+
+First, we split the data leaving 60% in the training set and 40% in the test set for cross verification. The data will be split separately for each user to make sure data for each user is well represented in the training and testing set. We exclude user_name from the set of predictors as the prediction should work on the data for arbitrary user.
+
+Looking at the pair plots for belt, arm, forearm, etc. rotations does not reveal any obvious candidates for predictors:
+
+```{r, echo=FALSE}
+suppressMessages(library(caret))
+featurePlot(x=training[,columnsFor("^[^_]*_belt$")],
+            y = training$classe,
+            plot="pairs", auto.key = list(columns = 5))
+
+featurePlot(x=training[,columnsFor("^[^_]*_arm$")],
+            y = training$classe,
+            plot="pairs", auto.key = list(columns = 5))
+
+featurePlot(x=training[,columnsFor("^[^_]*_forearm$")],
+            y = training$classe,
+            plot="pairs", auto.key = list(columns = 5))
+
+featurePlot(x=training[,columnsFor("^[^_]*_dumbbell$")],
+            y = training$classe,
+            plot="pairs", auto.key = list(columns = 5))
+
+```
+
+Looking further at the data, we realize that there are many measurements that are only present when new_window is “yes”, so more than 95% of those column observations are NA. We will exclude such columns from the set of variables used for prediction.
+
+The next step is to identify measurements with almost zero variance and exclude them from the set of predictors as well.
+
+Further analysis shows that there are a number of highly correlated columns.
+
+After elimination of mostly NA, almost zero variance and highly correlated colums we are left with the final set of 47 predictors:
+
+```{r, echo=FALSE}
+colnames(training)[-c(1:5,7,nzv,naCols,highlyCorNzv,160)]
+```
+
+Next, we extract principal components that explain 80% of the variance of the data and that yields a set of 14 PCA. Further, we train the model on training data using the rendom forest method, which yields the following results:
+
+```{r, echo=FALSE}
+modelFit$results
+```
+
+The mtry selected was `r modelFit$bestTune`.
+
+Fitted model yields 100% accuracy on the training set and 94.33% accuracy on a testing set.
